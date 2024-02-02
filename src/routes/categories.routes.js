@@ -6,6 +6,6 @@ const categoriesRoutes= Router();
 
 const categoriesController = new CategoriesController();
 
-categoriesRoutes.get("/user_id", categoriesController.index)
+categoriesRoutes.get("/", categoriesController.index)
 
 module.exports = categoriesRoutes;

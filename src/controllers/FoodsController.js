@@ -64,25 +64,20 @@ class FoodsController{
     }
 
     async index(request, response){
-        const {name, user_id, ingredients} = request.query
-
-
-        console.log(user_id)
-        let foodsQuery;
-
-        if(ingredients){
-            const { name, user_id, ingredients } = request.query;
-
-            let foods;
+        try{
+            const {name, user_id, ingredients, categories} = request.query
+        let foods;
         
             if (ingredients) {
               const filterIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
+              
         
               foods = await knex("foods")
                 .select([
                   "foods.id as food_id", // Renomeie o campo id para evitar ambiguidade
                   "foods.name",
-                  "foods.user_id"
+                  "foods.user_id",
+                  "foods.description",
                 ])
                 .where("foods.user_id", user_id)
                 .whereLike("foods.name", `${name}`)
@@ -90,7 +85,7 @@ class FoodsController{
                 .innerJoin("ingredients", "foods.id", "ingredients.food_id")
                 .groupBy("foods.id")
                 .orderBy("foods.name");
-            } else {
+            }else{
               foods = await knex("foods")
                 .where({ user_id })
                 .whereLike("name", `${name}`)
@@ -103,12 +98,19 @@ class FoodsController{
               const foodIngredients = userIngredients.filter(ingredient => ingredient.food_id === food.food_id); // Corrija para usar "food.food_id"
               return {
                 ...food,
-                ingredients: foodIngredients
+                ingredients: foodIngredients,
+                categories
               };
             });
         
             return response.json(foodsWithIngredients);
-        }}
+        }
+        catch(error) {
+            // Trata erros e retorna uma resposta de erro em caso de falha
+            console.error(error);
+            return response.status(500).json({ error: 'Erro interno do servidor.' });
+          }}
+        
 }
 
 module.exports = FoodsController
