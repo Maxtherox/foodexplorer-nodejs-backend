@@ -1,8 +1,10 @@
 const { Router } = require("express");
 
 const FoodsController = require("../controllers/FoodsController")
+const ensureAuthenticated = require("../middlewares/ensureAuthenticated")
 
 const foodsRoutes = Router();
+foodsRoutes.use(ensureAuthenticated)
 
  const foodsController = new FoodsController()
 

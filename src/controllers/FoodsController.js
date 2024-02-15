@@ -44,7 +44,6 @@ class FoodsController{
         const {id} = request.params;
 
         const food = await knex("foods").where({id}).first()
-        console.log(food)
 
         const ingredients = await knex("ingredients").where({food_id: id}).orderBy("name")
         const categories = await knex("categories").where({food_id: id}).orderBy("name")
@@ -63,54 +62,70 @@ class FoodsController{
         return response.json("deletado com sucesso.");
     }
 
-    async index(request, response){
-        try{
-            const {name, user_id, ingredients, categories} = request.query
-        let foods;
-        
-            if (ingredients) {
-              const filterIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
-              
-        
-              foods = await knex("foods")
-                .select([
-                  "foods.id as food_id", // Renomeie o campo id para evitar ambiguidade
-                  "foods.name",
-                  "foods.user_id",
-                  "foods.description",
-                ])
-                .where("foods.user_id", user_id)
-                .whereLike("foods.name", `${name}`)
-                .whereIn("foods.name", filterIngredients) // Corrija para usar "foods.name"
-                .innerJoin("ingredients", "foods.id", "ingredients.food_id")
-                .groupBy("foods.id")
-                .orderBy("foods.name");
-            }else{
-              foods = await knex("foods")
-                .where({ user_id })
-                .whereLike("name", `${name}`)
-                .orderBy("name");
-            }
-        
-            const userIngredients = await knex("ingredients").where({ user_id });
-        
-            const foodsWithIngredients = foods.map(food => {
-              const foodIngredients = userIngredients.filter(ingredient => ingredient.food_id === food.food_id); // Corrija para usar "food.food_id"
-              return {
-                ...food,
-                ingredients: foodIngredients,
-                categories
-              };
-            });
-        
-            return response.json(foodsWithIngredients);
+    async index(request, response) {
+        try {
+          const { name, ingredients, categories } = request.query;
+      
+          let foodsQuery = knex("foods")
+            .select([
+              "foods.id",
+              "foods.name",
+              "foods.user_id",
+              "foods.description",
+              "categories.name as category",
+            ])
+            .leftJoin("categories", "foods.id", "categories.food_id") // Ajustado para usar a tabela categories
+            .groupBy("foods.id")
+            .orderBy("foods.name");
+      
+          if (name) {
+            foodsQuery = foodsQuery.whereLike("foods.name", `%${name}%`);
+          }
+      
+          if (categories) {
+            const filterCategories = categories.split(',').map(category => category.trim());
+      
+            foodsQuery = foodsQuery
+              .whereIn("categories.name", filterCategories);
+          }
+      
+          if (ingredients) {
+            const filterIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
+      
+            foodsQuery = foodsQuery
+              .whereIn("foods.id", function () {
+                this.select("food_id")
+                  .from("ingredients")
+                  .whereIn("name", filterIngredients);
+              });
+          }
+      
+          const foods = await foodsQuery;
+      
+          const userIngredients = await knex("ingredients")
+            .select([
+              "ingredients.id",
+              "ingredients.food_id",
+              "ingredients.name",
+              // adicione outras colunas conforme necessário
+            ])
+            .whereIn("food_id", foods.map(food => food.id));
+      
+          const foodsWithIngredients = foods.map(food => {
+            const foodIngredients = userIngredients.filter(ingredient => ingredient.food_id === food.id);
+            return {
+              ...food,
+              ingredients: foodIngredients,
+            };
+          });
+      
+          return response.json(foodsWithIngredients);
+        } catch (error) {
+          console.error(error);
+          return response.status(500).json({ error: 'Erro interno do servidor.' });
         }
-        catch(error) {
-            // Trata erros e retorna uma resposta de erro em caso de falha
-            console.error(error);
-            return response.status(500).json({ error: 'Erro interno do servidor.' });
-          }}
-        
+      }
+      
 }
 
 module.exports = FoodsController
