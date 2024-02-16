@@ -5,7 +5,6 @@ class FoodsController{
     async create(request, response){
         const {name, description, price, ingredients, categories} = request.body;
         const {user_id} = request.params;
-        console.log(categories)
         const checkPrice = price;
 
         if (typeof checkPrice != 'number'){
@@ -38,6 +37,50 @@ class FoodsController{
         await knex("categories").insert(categoriesInsert)
 
         response.status(201).json("Prato adicionado com sucesso!")
+    }
+
+    async update(request, response){
+        const { name, description, price, ingredients, categories } = request.body;
+        const { id } = request.params;
+        
+        const food = await knex("foods").where({ id }).first();
+        
+        if (!food) {
+            throw new AppError("Prato não encontrado");
+        }
+        
+        // Etapa 1: Atualizar a tabela 'ingredients'
+        if (ingredients) {
+            await knex("ingredients")
+                .where({ food_id: id }) // Assumindo que a chave estrangeira em 'ingredients' é 'food_id'
+                .del(); // Exclui todos os registros associados a essa comida
+        
+            // Insere os novos ingredientes
+            const ingredientsData = ingredients.map(ingredient => ({ food_id: id, name: ingredient }));
+            await knex("ingredients").insert(ingredientsData);
+        }
+        
+        // Etapa 2: Atualizar a tabela 'categories'
+        // Etapa 2: Atualizar a tabela 'categories'
+        if (categories) {
+            await knex("categories")
+                .where({ food_id: id }) // Assumindo que a chave estrangeira em 'categories' é 'food_id'
+                .del(); // Exclui todas as categorias associadas a essa comida
+
+            // Insere as novas categorias
+            const categoriesData = categories.map(category => ({ food_id: id, name: category }));
+            await knex("categories").insert(categoriesData);
+        }
+
+        
+        // Etapa 3: Atualizar a tabela 'foods'
+        const formattedDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+        await knex("foods")
+            .where({ id })
+            .update({ name, description, price, updated_at: formattedDate });
+        
+        return response.status(200).json();
+
     }
 
     async show(request, response){
