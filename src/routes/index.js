@@ -8,7 +8,9 @@ const favoritesRoutes = require("./favorites.routes");
 const sessionsRouter = require("./sessions.routes");
 
 
+
 const routes = Router();
+
 
 routes.use("/sessions", sessionsRouter);
 routes.use("/users", usersRouter);

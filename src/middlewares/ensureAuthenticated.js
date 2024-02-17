@@ -16,6 +16,7 @@ function ensureAuthenticated(request, response, next){
 
         request.user = {
             id: Number(user_id),
+            role: role,
         }
 
         return next();
