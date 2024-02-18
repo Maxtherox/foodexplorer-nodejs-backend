@@ -4,12 +4,14 @@ const AppError = require("../utils/AppError");
 class FoodsController{
     async create(request, response){
         const {name, description, price, ingredients, categories} = request.body;
-        const {user_id} = request.params;
-        const checkPrice = price;
+        const user_id = request.user.id
+        console.log(request.body);
+
+        /*const checkPrice = price;
 
         if (typeof checkPrice != 'number'){
             throw new AppError("Só é permitido caracteres númericos no campo relacionado a preço.", 401)
-        }
+        }*/
         const [food_id] = await knex("foods").insert({
             name,
             description,
@@ -24,14 +26,15 @@ class FoodsController{
                 user_id
             }
         })
+       const categoriesArray = Array.isArray(categories) ? categories : [categories];
 
-       const categoriesInsert = categories.map(name => {
-            return{
-                name,
-                food_id,
-                user_id
-            }
-       })
+       const categoriesInsert = categoriesArray.map(name => {
+        return {
+            name,
+            food_id,
+            user_id
+        };
+    });
 
         await knex("ingredients").insert(ingredientsInsert)
         await knex("categories").insert(categoriesInsert)
