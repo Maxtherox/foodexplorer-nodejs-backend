@@ -1,5 +1,6 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
+const DiskStorage = require("../providers/DiskStorage")
 
 class FoodsController{
     async create(request, response){
@@ -12,20 +13,44 @@ class FoodsController{
         if (typeof checkPrice != 'number'){
             throw new AppError("Só é permitido caracteres númericos no campo relacionado a preço.", 401)
         }*/
+        const checkFoodAlreadyExists = await knex("foods").where({name}).first();
+    
+        if(checkFoodAlreadyExists){
+            throw new AppError("Este prato já existe no cardápio.")
+        }
+
+        const avatarFileName = request.file.filename;
+
+        const diskStorage = new DiskStorage()
+
+        const filename = await diskStorage.saveFile(avatarFileName);
+
         const [food_id] = await knex("foods").insert({
+            avatar: filename,
             name,
             description,
             price,
             user_id
         })
         
-        const ingredientsInsert = ingredients.map(name => {
-            return {
-                name,
-                food_id,
-                user_id
+        const hasOnlyOneIngredient = typeof(ingredients) === "string";
+
+        let ingredientsInsert
+
+        if (hasOnlyOneIngredient) {
+            ingredientsInsert = {
+                name: ingredients,
+                food_id
             }
-        })
+
+        } else if (ingredients.length > 1) {
+            ingredientsInsert = ingredients.map(name => {
+                return {
+                    name,
+                    food_id
+                }
+            });
+          }
        const categoriesArray = Array.isArray(categories) ? categories : [categories];
 
        const categoriesInsert = categoriesArray.map(name => {
@@ -35,6 +60,7 @@ class FoodsController{
             user_id
         };
     });
+    
 
         await knex("ingredients").insert(ingredientsInsert)
         await knex("categories").insert(categoriesInsert)

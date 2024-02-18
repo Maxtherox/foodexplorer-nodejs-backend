@@ -17,7 +17,7 @@ foodsRoutes.use(ensureAuthenticated)
  const foodsController = new FoodsController()
  const foodAvatarController = new FoodAvatarController()
 
- foodsRoutes.post("/", verifyUserAuthorization("admin"), foodsController.create);
+ foodsRoutes.post("/", verifyUserAuthorization("admin"), upload.single("avatar"), foodsController.create);
  foodsRoutes.get("/:id", foodsController.show);
  foodsRoutes.get("/", foodsController.index);
  foodsRoutes.delete("/:id", verifyUserAuthorization("admin"), foodsController.delete);
