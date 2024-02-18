@@ -4,7 +4,7 @@ const DiskStorage = require("../providers/DiskStorage")
 
 class FoodsController{
     async create(request, response){
-        const {name, description, price, ingredients, categories} = request.body;
+        const {name, description, price, ingredients, category} = request.body;
         const user_id = request.user.id
         console.log(request.body);
 
@@ -29,6 +29,7 @@ class FoodsController{
             avatar: filename,
             name,
             description,
+            category,
             price,
             user_id
         })
@@ -50,26 +51,15 @@ class FoodsController{
                     food_id
                 }
             });
-          }
-       const categoriesArray = Array.isArray(categories) ? categories : [categories];
-
-       const categoriesInsert = categoriesArray.map(name => {
-        return {
-            name,
-            food_id,
-            user_id
-        };
-    });
-    
+          }    
 
         await knex("ingredients").insert(ingredientsInsert)
-        await knex("categories").insert(categoriesInsert)
 
         response.status(201).json("Prato adicionado com sucesso!")
     }
 
     async update(request, response){
-        const { name, description, price, ingredients, categories } = request.body;
+        const { name, description, price, ingredients, category } = request.body;
         const { id } = request.params;
         
         const food = await knex("foods").where({ id }).first();
@@ -88,20 +78,7 @@ class FoodsController{
             const ingredientsData = ingredients.map(ingredient => ({ food_id: id, name: ingredient }));
             await knex("ingredients").insert(ingredientsData);
         }
-        
-        // Etapa 2: Atualizar a tabela 'categories'
-        // Etapa 2: Atualizar a tabela 'categories'
-        if (categories) {
-            await knex("categories")
-                .where({ food_id: id }) // Assumindo que a chave estrangeira em 'categories' é 'food_id'
-                .del(); // Exclui todas as categorias associadas a essa comida
 
-            // Insere as novas categorias
-            const categoriesData = categories.map(category => ({ food_id: id, name: category }));
-            await knex("categories").insert(categoriesData);
-        }
-
-        
         // Etapa 3: Atualizar a tabela 'foods'
         const formattedDate = new Date().toISOString().slice(0, 19).replace("T", " ");
         await knex("foods")
@@ -118,11 +95,9 @@ class FoodsController{
         const food = await knex("foods").where({id}).first()
 
         const ingredients = await knex("ingredients").where({food_id: id}).orderBy("name")
-        const categories = await knex("categories").where({food_id: id}).orderBy("name")
         return response.json({
             ...food,
             ingredients,
-            categories
         });
     }
     
@@ -135,68 +110,47 @@ class FoodsController{
     }
 
     async index(request, response) {
-        try {
-          const { name, ingredients, categories } = request.query;
-      
-          let foodsQuery = knex("foods")
-            .select([
-              "foods.id",
-              "foods.name",
-              "foods.user_id",
-              "foods.description",
-              "categories.name as category",
-            ])
-            .leftJoin("categories", "foods.id", "categories.food_id") // Ajustado para usar a tabela categories
-            .groupBy("foods.id")
-            .orderBy("foods.name");
-      
-          if (name) {
-            foodsQuery = foodsQuery.whereLike("foods.name", `%${name}%`);
-          }
-      
-          if (categories) {
-            const filterCategories = categories.split(',').map(category => category.trim());
-      
-            foodsQuery = foodsQuery
-              .whereIn("categories.name", filterCategories);
-          }
-      
-          if (ingredients) {
+               // Capturing Query Parameters
+        const { name, ingredients } = request.query;
+
+        // Listing foods and Ingredients at the same time (innerJoin)
+        let foods;
+
+        if (ingredients) {
             const filterIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
-      
-            foodsQuery = foodsQuery
-              .whereIn("foods.id", function () {
-                this.select("food_id")
-                  .from("ingredients")
-                  .whereIn("name", filterIngredients);
-              });
-          }
-      
-          const foods = await foodsQuery;
-      
-          const userIngredients = await knex("ingredients")
-            .select([
-              "ingredients.id",
-              "ingredients.food_id",
-              "ingredients.name",
-              // adicione outras colunas conforme necessário
-            ])
-            .whereIn("food_id", foods.map(food => food.id));
-      
-          const foodsWithIngredients = foods.map(food => {
-            const foodIngredients = userIngredients.filter(ingredient => ingredient.food_id === food.id);
-            return {
-              ...food,
-              ingredients: foodIngredients,
-            };
-          });
-      
-          return response.json(foodsWithIngredients);
-        } catch (error) {
-          console.error(error);
-          return response.status(500).json({ error: 'Erro interno do servidor.' });
+            
+            foods = await knex("ingredients")
+                .select([
+                    "foods.id",
+                    "foods.name",
+                    "foods.description",
+                    "foods.category",
+                    "foods.price",
+                    "foods.avatar",
+                ])
+                .whereLike("foods.name", `%${name}%`)
+                .whereIn("name", filterIngredients)
+                .innerJoin("foods", "foods.id", "ingredients.food_id")
+                .groupBy("foods.id")
+                .orderBy("foods.name")
+        } else {
+            foods = await knex("foods")
+                .whereLike("name", `%${name}%`)
+                .orderBy("name");
         }
-      }
+            
+        const foodsIngredients = await knex("ingredients") 
+        const foodsWithIngredients = foods.map(food => {
+            const foodIngredient = foodsIngredients.filter(ingredient => ingredient.food_id === food.id);
+    
+            return {
+                ...food,
+                ingredients: foodIngredient
+            }
+        })
+        
+        return response.status(200).json(foodsWithIngredients);
+    }
       
 }
 
