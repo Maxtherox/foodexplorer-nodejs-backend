@@ -11,7 +11,7 @@ const app = express();
 app.use(cookieParser())
 app.use(cors(
     {
-        origin: ["https://foodexplorer-maxtr.onrender.com"],
+        origin: ["https://main--foodexplorer-maxtr.netlify.app"],
         credentials: true,
     }
 ));
