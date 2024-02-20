@@ -20,7 +20,7 @@ foodsRoutes.use(ensureAuthenticated)
  foodsRoutes.get("/:id", foodsController.show);
  foodsRoutes.get("/", foodsController.index);
  foodsRoutes.delete("/:id", verifyUserAuthorization("admin"), foodsController.delete);
- foodsRoutes.put("/:id", verifyUserAuthorization("admin"), ensureAuthenticated, foodsController.update)
+ foodsRoutes.put("/:id", verifyUserAuthorization("admin"), upload.single("avatar"), ensureAuthenticated, foodsController.update)
 
 
  module.exports = foodsRoutes;

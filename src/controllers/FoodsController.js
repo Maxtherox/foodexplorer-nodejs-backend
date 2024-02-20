@@ -6,13 +6,7 @@ class FoodsController{
     async create(request, response){
         const {name, description, price, ingredients, category} = request.body;
         const user_id = request.user.id
-        console.log(request.body);
 
-        /*const checkPrice = price;
-
-        if (typeof checkPrice != 'number'){
-            throw new AppError("Só é permitido caracteres númericos no campo relacionado a preço.", 401)
-        }*/
         const checkFoodAlreadyExists = await knex("foods").where({name}).first();
     
         if(checkFoodAlreadyExists){
@@ -59,45 +53,78 @@ class FoodsController{
     }
 
     async update(request, response){
-        const { name, description, price, ingredients, category } = request.body;
+        const { name, description, price, ingredients, category, avatar } = request.body;
         const { id } = request.params;
+
         
+
         const food = await knex("foods").where({ id }).first();
+        
         
         if (!food) {
             throw new AppError("Prato não encontrado");
         }
+
+        const diskStorage = new DiskStorage();  
         
-        // Etapa 1: Atualizar a tabela 'ingredients'
-        if (ingredients) {
-            await knex("ingredients")
-                .where({ food_id: id }) // Assumindo que a chave estrangeira em 'ingredients' é 'food_id'
-                .del(); // Exclui todos os registros associados a essa comida
-        
-            // Insere os novos ingredientes
-            const ingredientsData = ingredients.map(ingredient => ({ food_id: id, name: ingredient }));
-            await knex("ingredients").insert(ingredientsData);
+        let avatarFileName
+
+        if(request.file){
+            avatarFileName = request.file.filename;
+
+            if (food.avatar){
+                await diskStorage.deleteFile(food.avatar);
+            }
         }
 
-        // Etapa 3: Atualizar a tabela 'foods'
-        const formattedDate = new Date().toISOString().slice(0, 19).replace("T", " ");
-        await knex("foods")
-            .where({ id })
-            .update({ name, description, price, updated_at: formattedDate });
-        
-        return response.status(200).json();
+        const filename = avatarFileName ? await diskStorage.saveFile(avatarFileName) : food.avatar;
+
+
+        food.avatar = avatarFileName ? filename : food.avatar;
+        food.name = name ?? food.name;
+        food.description = description ?? food.description;
+        food.category = category ?? food.category;
+        food.price = price ?? food.price;
+
+        await knex("foods").where({ id }).update(food);
+
+
+        await knex("ingredients").where({ food_id: id }).delete();
+
+        const hasOnlyOneIngredient = typeof ingredients === "string";
+
+        let ingredientsInsert;
+
+        if (hasOnlyOneIngredient) {
+            ingredientsInsert = {
+                name: ingredients,
+                food_id: food.id,
+            };
+        } else if (ingredients.length > 1) {
+            ingredientsInsert = ingredients.map((ingredient) => {
+                return {
+                    food_id: food.id,
+                    name: ingredient,
+                };
+            });
+        }
+
+        await knex("ingredients").insert(ingredientsInsert);
+
+        return response.status(201).json('Prato atualizado com sucesso');
+
 
     }
 
     async show(request, response){
         const {id} = request.params;
 
-        const food = await knex("foods").where({id}).first()
+        const food = await knex("foods").where({id}).first();
 
-        const ingredients = await knex("ingredients").where({food_id: id}).orderBy("name")
+        const ingredients = await knex("ingredients").where({food_id: id}).orderBy("name");
         return response.json({
             ...food,
-            ingredients,
+            ingredients
         });
     }
     
@@ -113,7 +140,6 @@ class FoodsController{
                // Capturing Query Parameters
         const { name, ingredients } = request.query;
 
-        // Listing foods and Ingredients at the same time (innerJoin)
         let foods;
 
         if (ingredients) {
