@@ -5,6 +5,7 @@ const routes = require("./routes");
 const uploadConfig = require("./configs/upload");
 const cors = require("cors")
 const cookieParser = require("cookie-parser")
+require("dotenv/config");
 
 const app = express();
 app.use(cookieParser())
@@ -37,7 +38,7 @@ app.use((error, request, response, next) => {
     });
 });
 
-const PORT = 3333;
+const PORT = process.env.PORT || 3333;
 
 // Inicia o servidor Express na porta especificada.
 app.listen(PORT, () => console.log(`Server is running ${PORT}`));
