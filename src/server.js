@@ -20,6 +20,11 @@ app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER))
 app.use(routes);
 
 app.use((error, request, response, next) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://main--foodexplorer-maxtr.netlify.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next()
     // Verifica se o erro é uma instância da classe AppError.
     if (error instanceof AppError) {
         return response.status(error.statusCode).json({
