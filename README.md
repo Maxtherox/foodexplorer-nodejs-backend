@@ -4,6 +4,10 @@
 
 Bem-vindo ao Food Explorer, uma aplicação em Node.js em desenvolvimento que permite gerenciar pratos, ingredientes, categorias e favoritos de usuários. Esta documentação fornecerá uma visão geral da aplicação, instruções de configuração e como utilizar suas funcionalidades.
 
+Você pode ver as prints da aplicação no repositório de seu frontend
+[Frontend](https://github.com/Maxtherox/foodexplorer-react-frontend?tab=readme-ov-file)
+[Deploy Fronend](https://main--foodexplorer-maxtr.netlify.app/)
+
 ## Pré-requisitos
 
 - Node.js instalado (versão recomendada: 14.x ou superior)
@@ -122,4 +126,4 @@ curl "http://localhost:3333/categories?user_id=1"
 
 ## Considerações Finais
 
-O Food Explorer é uma aplicação em constante desenvolvimento, e a integração com o frontend ainda está pendente. Sinta-se à vontade para contribuir, reportar problemas ou sugerir melhorias. Agradecemos por usar o Food Explorer! 🍲✨
+O Food Explorer é uma aplicação em constante desenvolvimento. Sinta-se à vontade para contribuir, reportar problemas ou sugerir melhorias. Agradecemos por usar o Food Explorer! 🍲✨
