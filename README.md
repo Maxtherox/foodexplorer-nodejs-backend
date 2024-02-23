@@ -6,6 +6,7 @@ Bem-vindo ao Food Explorer, uma aplicação em Node.js em desenvolvimento que pe
 
 Você pode ver as prints da aplicação no repositório de seu frontend
 [Frontend](https://github.com/Maxtherox/foodexplorer-react-frontend?tab=readme-ov-file)
+
 [Deploy Fronend](https://main--foodexplorer-maxtr.netlify.app/)
 
 ## Pré-requisitos
